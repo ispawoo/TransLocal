@@ -142,7 +142,7 @@ export const AboutTab: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
           <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#4F8CFF] to-[#10B981] p-0.5 shadow-lg shadow-brand-accent/20 shrink-0 overflow-hidden relative group select-none">
             <img 
-              src="https://github.com/ispawoo.png" 
+              src="/author-avatar.jpg" 
               alt="Yasir Ispawoo" 
               className="w-full h-full rounded-full object-cover border border-slate-900 group-hover:scale-110 transition-transform duration-500"
             />
