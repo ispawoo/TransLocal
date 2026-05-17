@@ -304,7 +304,14 @@ class WebRTCManager {
 
     channel.onclose = () => {
       console.log(`[WebRTC] DataChannel closed for peer: ${peerId}`);
-      this.cleanupConnection(peerId, 'DataChannel closed');
+      // Only treat it as an error/failure if the transfer wasn't already completed successfully
+      const transferId = this.connections[peerId]?.transferId;
+      const currentTx = transferId ? useAppStore.getState().transfers[transferId] : null;
+      if (currentTx && currentTx.status !== 'completed') {
+        this.cleanupConnection(peerId, 'DataChannel closed prematurely');
+      } else {
+        this.cleanupConnection(peerId);
+      }
     };
 
     channel.onerror = (err) => {
@@ -413,7 +420,12 @@ class WebRTCManager {
         
         // Cleanup cache
         delete this.pendingFiles[transferId];
-        this.cleanupConnection(peerId);
+        
+        // Wait a short delay before closing the WebRTC connection
+        // to let the receiver safely process the EOF and assemble the file without race conditions
+        setTimeout(() => {
+          this.cleanupConnection(peerId);
+        }, 1500);
       }
     };
 

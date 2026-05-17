@@ -208,6 +208,25 @@ wss.on('connection', (ws, req) => {
   });
 });
 
+// Helper to determine if an IP address belongs to a private/local subnet
+function isPrivateIP(ip) {
+  if (!ip) return false;
+  const cleanIp = ip.replace(/^::ffff:/, '');
+  if (cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost') return true;
+  
+  const parts = cleanIp.split('.');
+  if (parts.length === 4) {
+    const first = parseInt(parts[0], 10);
+    const second = parseInt(parts[1], 10);
+    if (first === 10) return true;
+    if (first === 172 && (second >= 16 && second <= 31)) return true;
+    if (first === 192 && second === 168) return true;
+  }
+  
+  if (cleanIp.startsWith('fe80:')) return true;
+  return false;
+}
+
 // Helper to broadcast lists of nearby peers (sharing same IP subnet or same roomCode)
 function broadcastPeerList(originatorId) {
   const originator = clients.get(originatorId);
@@ -231,8 +250,21 @@ function broadcastPeerList(originatorId) {
     for (const [otherId, otherClient] of clients.entries()) {
       if (otherId === id) continue; // Exclude self
       
+      const ip1 = (client.ipAddress || '').replace(/^::ffff:/, '');
+      const ip2 = (otherClient.ipAddress || '').replace(/^::ffff:/, '');
+      
       const sameRoom = client.roomCode && otherClient.roomCode && client.roomCode.toLowerCase() === otherClient.roomCode.toLowerCase();
-      const sameNetwork = !client.roomCode && !otherClient.roomCode && client.ipAddress === otherClient.ipAddress;
+      
+      let sameNetwork = false;
+      if (!client.roomCode && !otherClient.roomCode) {
+        if (ip1 === ip2) {
+          sameNetwork = true;
+        } else if (isPrivateIP(ip1) && isPrivateIP(ip2)) {
+          // If both are private/local IPs connecting to a local signaling server,
+          // they are on the same local area network!
+          sameNetwork = true;
+        }
+      }
       
       if (sameRoom || sameNetwork) {
         nearbyPeers.push({
