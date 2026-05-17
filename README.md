@@ -166,6 +166,13 @@ If devices are on the same WiFi but don't show up on the Radar:
 1.  **Public IP mismatches**: In dual-band routers (2.4GHz vs 5GHz), the router might assign different networks. Type a matching **Room Code** (e.g. `PAIR`) in Settings to manually bridge the devices together!
 2.  **Offline LAN signaling**: If you don't have internet, your devices won't resolve Render/Vercel. Start the local signaling server on one machine (`npm run signaling`), look at its displayed LAN IP (e.g. `ws://192.168.1.15:5000`), and paste this URL into Settings -> Signaling Endpoint on all other devices!
 
+## BUY ME A COFFEE
+
+If you like Translocal, consider supporting me:
+
+* [Buy me a coffee](https://www.buymeacoffee.com/ispawoo)
+
+
 ---
 
 ## 🗺️ Upgrade Roadmap & Scaling
