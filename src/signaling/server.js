@@ -1,34 +1,37 @@
-const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const os = require('os');
 
 const PORT = process.env.PORT || 5000;
-const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
 
-// Simple health check endpoint
-app.get('/health', (req, res) => {
-  res.send({ status: 'ok', peersConnected: wss.clients.size });
-});
-
-// Serve a static info page if visited
-app.get('/', (req, res) => {
-  res.send(`
-    <div style="font-family: sans-serif; padding: 40px; text-align: center; background: #0B0F19; color: #fff; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-      <h1 style="color: #4F8CFF; font-size: 2.5rem; margin-bottom: 10px;">TransLocal Signaling Server</h1>
-      <p style="color: #94A3B8; font-size: 1.1rem; max-width: 600px;">
-        This server handles WebRTC signaling, peer discovery, and fallback rooms for offline-first local network file sharing.
-      </p>
-      <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-        <p style="margin: 5px 0;"><strong>Active Peers:</strong> ${wss.clients.size}</p>
-        <p style="margin: 5px 0; color: #10B981;"><strong>Status:</strong> Online and Ready</p>
+const server = http.createServer((req, res) => {
+  const url = req.url;
+  
+  if (url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', peersConnected: wss.clients.size }));
+  } else if (url === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`
+      <div style="font-family: sans-serif; padding: 40px; text-align: center; background: #0B0F19; color: #fff; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <h1 style="color: #4F8CFF; font-size: 2.5rem; margin-bottom: 10px;">TransLocal Signaling Server</h1>
+        <p style="color: #94A3B8; font-size: 1.1rem; max-width: 600px;">
+          This server handles WebRTC signaling, peer discovery, and fallback rooms for offline-first local network file sharing.
+        </p>
+        <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+          <p style="margin: 5px 0;"><strong>Active Peers:</strong> ${wss.clients.size}</p>
+          <p style="margin: 5px 0; color: #10B981;"><strong>Status:</strong> Online and Ready</p>
+        </div>
+        <p style="margin-top: 40px; font-size: 0.85rem; color: #64748B;">TransLocal &copy; ${new Date().getFullYear()}</p>
       </div>
-      <p style="margin-top: 40px; font-size: 0.85rem; color: #64748B;">TransLocal &copy; ${new Date().getFullYear()}</p>
-    </div>
-  `);
+    `);
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
+  }
 });
+
+const wss = new WebSocket.Server({ server });
 
 // Keep track of connected clients
 // Map of connectionId -> client Info
@@ -231,19 +234,26 @@ wss.on('connection', (ws, req) => {
 // Helper to determine if an IP address belongs to a private/local subnet
 function isPrivateIP(ip) {
   if (!ip) return false;
-  const cleanIp = ip.replace(/^::ffff:/, '');
+  const cleanIp = ip.replace(/^::ffff:/, '').trim().toLowerCase();
+  
   if (cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost') return true;
+  
+  // IPv6 unique local, link-local, loopback check
+  if (cleanIp.startsWith('fe80:') || cleanIp.startsWith('fc00:') || cleanIp.startsWith('fd00:')) return true;
   
   const parts = cleanIp.split('.');
   if (parts.length === 4) {
     const first = parseInt(parts[0], 10);
     const second = parseInt(parts[1], 10);
+    
     if (first === 10) return true;
     if (first === 172 && (second >= 16 && second <= 31)) return true;
     if (first === 192 && second === 168) return true;
+    if (first === 169 && second === 254) return true; // Link-local
+    if (first === 127) return true; // Loopback
+    if (first === 100 && (second >= 64 && second <= 127)) return true; // Carrier-grade NAT / CGNAT / Tailscale
   }
   
-  if (cleanIp.startsWith('fe80:')) return true;
   return false;
 }
 

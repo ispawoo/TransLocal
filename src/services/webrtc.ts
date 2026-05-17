@@ -79,8 +79,8 @@ class WebRTCManager {
 
     pc.onconnectionstatechange = () => {
       console.log(`[WebRTC] Connection state with ${peerId} changed to: ${pc.connectionState}`);
-      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-        this.cleanupConnection(peerId, 'Connection failed or disconnected');
+      if (pc.connectionState === 'failed') {
+        this.cleanupConnection(peerId, 'Connection failed');
       }
     };
 
@@ -303,6 +303,9 @@ class WebRTCManager {
   // Setup DataChannel listeners
   private setupDataChannel(peerId: string, channel: RTCDataChannel) {
     channel.binaryType = 'arraybuffer';
+    
+    // Explicitly set the buffered amount low threshold to half of our buffer limit (512KB)
+    channel.bufferedAmountLowThreshold = BUFFER_THRESHOLD / 2;
 
     channel.onopen = () => {
       console.log(`[WebRTC] DataChannel opened with peer: ${peerId}`);
@@ -318,14 +321,19 @@ class WebRTCManager {
       this.handleIncomingChunk(peerId, event.data);
     };
 
+    // Capture transferId at setup time so onclose doesn't rely on stale connection state
+    const getActiveTransferId = () => this.connections[peerId]?.transferId;
+
     channel.onclose = () => {
       console.log(`[WebRTC] DataChannel closed for peer: ${peerId}`);
-      // Only treat it as an error/failure if the transfer wasn't already completed successfully
-      const transferId = this.connections[peerId]?.transferId;
+      // Capture transferId before connection state is cleaned up
+      const transferId = getActiveTransferId();
       const currentTx = transferId ? useAppStore.getState().transfers[transferId] : null;
-      if (currentTx && currentTx.status !== 'completed') {
+      // Only mark as failed if the transfer was NOT already completed
+      if (currentTx && currentTx.status !== 'completed' && currentTx.status !== 'cancelled') {
         this.cleanupConnection(peerId, 'DataChannel closed prematurely');
       } else {
+        // Transfer already completed - silent cleanup
         this.cleanupConnection(peerId);
       }
     };
@@ -430,18 +438,14 @@ class WebRTCManager {
 
       // Check if finished
       if (offset >= fileSize) {
-        channel.send(JSON.stringify({ type: 'eof', transferId }));
-        store.updateTransferStatus(transferId, 'completed');
-        console.log(`[WebRTC] Successfully sent file ${file.name} to ${peerId}`);
-        
-        // Cleanup cache
-        delete this.pendingFiles[transferId];
-        
-        // Wait a short delay before closing the WebRTC connection
-        // to let the receiver safely process the EOF and assemble the file without race conditions
-        setTimeout(() => {
-          this.cleanupConnection(peerId);
-        }, 1500);
+        try {
+          channel.send(JSON.stringify({ type: 'eof', transferId }));
+          console.log(`[WebRTC] Sent EOF message to peer ${peerId}. Waiting for receiver ACK...`);
+        } catch (e) {
+          console.error('[WebRTC] Failed to send EOF message:', e);
+          store.updateTransferStatus(transferId, 'failed', 'Error sending transfer end-of-file');
+          this.cleanupConnection(peerId, 'Sending EOF failed');
+        }
       }
     };
 
@@ -487,12 +491,13 @@ class WebRTCManager {
 
           console.log(`[WebRTC] Completed receiving all bytes. Assembling file...`);
           
-          // Assemble
-          const blob = new Blob(state.fileBuffer, { type: meta.fileType });
+          // Assemble the Blob from all received chunks
+          const blob = new Blob(state.fileBuffer, { type: meta.fileType || 'application/octet-stream' });
           const url = URL.createObjectURL(blob);
           
-          store.setTransferPreview(transferId, url);
+          // Mark completed FIRST - before any cleanup - so onclose sees the completed status
           store.updateTransferStatus(transferId, 'completed');
+          store.setTransferPreview(transferId, url);
           
           // Trigger download if set to auto-download
           if (store.settings.autoDownload) {
@@ -504,7 +509,50 @@ class WebRTCManager {
             document.body.removeChild(a);
           }
           
-          this.cleanupConnection(peerId);
+          // Send ACK back to the sender
+          if (state.dataChannel && state.dataChannel.readyState === 'open') {
+            try {
+              state.dataChannel.send(JSON.stringify({ type: 'ack', transferId }));
+              console.log(`[WebRTC] Sent ACK back to sender for transfer ${transferId}`);
+            } catch (e) {
+              console.error('[WebRTC] Failed to send ACK to sender:', e);
+            }
+          }
+          
+          // Delay cleanup so onclose (fired when sender closes connection) sees 'completed'
+          setTimeout(() => {
+            this.cleanupConnection(peerId);
+          }, 2000);
+        }
+        
+        else if (payload.type === 'ack') {
+          const transferId = state.transferId || payload.transferId;
+          console.log(`[WebRTC] Received completion ACK from receiver for transfer: ${transferId}`);
+          
+          if (transferId) {
+            store.updateTransferStatus(transferId, 'completed');
+            
+            // Cleanup cache
+            delete this.pendingFiles[transferId];
+            
+            // Wait until buffer is empty before closing the WebRTC connection
+            // to let the receiver safely receive all final data packets.
+            const checkBufferAndClose = () => {
+              const currentState = this.connections[peerId];
+              if (!currentState || !currentState.dataChannel) return;
+              
+              if (currentState.dataChannel.readyState === 'open' && currentState.dataChannel.bufferedAmount > 0) {
+                setTimeout(checkBufferAndClose, 250);
+              } else {
+                // Add a small delay after buffer clears to ensure network delivery of any pending data
+                setTimeout(() => {
+                  this.cleanupConnection(peerId);
+                }, 1000);
+              }
+            };
+            
+            checkBufferAndClose();
+          }
         }
       } catch (e) {
         console.error('[WebRTC] Failed to parse Text Channel payload:', e);

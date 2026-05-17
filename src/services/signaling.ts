@@ -22,7 +22,13 @@ class SignalingService {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       // Fallback is localhost:5000, but in production, we can configure via env
       const defaultUrl = `${protocol}//${window.location.hostname}:5000`;
-      this.serverUrl = process.env.NEXT_PUBLIC_SIGNALING_URL || defaultUrl;
+      const rawUrl = process.env.NEXT_PUBLIC_SIGNALING_URL || defaultUrl;
+      
+      // If the URL contains localhost or 127.0.0.1, replace it with the actual hostname of the loaded page
+      // so other local network devices can connect to this same server.
+      this.serverUrl = rawUrl
+        .replace('localhost', window.location.hostname)
+        .replace('127.0.0.1', window.location.hostname);
     }
   }
 
