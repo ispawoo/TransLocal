@@ -35,16 +35,36 @@ app.get('/', (req, res) => {
 const clients = new Map();
 
 function getClientIp(req) {
-  // Try custom headers first (Vercel, Cloudflare, etc.)
+  let ip = '';
+  // Try custom headers first (Vercel, Cloudflare, HuggingFace, etc.)
   const xForwardedFor = req.headers['x-forwarded-for'];
   if (xForwardedFor) {
-    return xForwardedFor.split(',')[0].trim();
+    ip = xForwardedFor.split(',')[0].trim();
+  } else {
+    const xRealIp = req.headers['x-real-ip'];
+    if (xRealIp) {
+      ip = xRealIp;
+    } else {
+      ip = req.socket.remoteAddress || '';
+    }
   }
-  const xRealIp = req.headers['x-real-ip'];
-  if (xRealIp) {
-    return xRealIp;
+
+  // Clean the IP address from any port numbers, braces, or prefixes
+  let clean = ip.trim();
+  
+  // If it's IPv4-mapped IPv6 (e.g. ::ffff:192.168.1.1), strip prefix
+  clean = clean.replace(/^::ffff:/, '');
+  
+  // If IPv6 is enclosed in brackets with port (e.g. [::1]:5000)
+  if (clean.startsWith('[') && clean.includes(']')) {
+    const match = clean.match(/^\[(.*)\]/);
+    if (match) clean = match[1];
+  } else if (clean.includes('.')) {
+    // If it is IPv4 with port (e.g. "182.180.20.10:49281" or "192.168.1.1:5000"), strip port
+    clean = clean.split(':')[0];
   }
-  return req.socket.remoteAddress;
+  
+  return clean;
 }
 
 wss.on('connection', (ws, req) => {
