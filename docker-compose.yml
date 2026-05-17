@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # Next.js 15 App Shell (Frontend)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: translocal-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_SIGNALING_URL=ws://localhost:5000
+    depends_on:
+      - signaling
+    restart: always
+
+  # WebSocket Signaling Server (Backend)
+  signaling:
+    build:
+      context: .
+      dockerfile: src/signaling/Dockerfile
+    container_name: translocal-signaling
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+    restart: always

@@ -1,0 +1,54 @@
+name: TransLocal CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # Job 1: Test & Lint Codebase
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: Run ESLint Linter Checks
+        run: npm run lint
+
+  # Job 2: Build Application Shells
+  test-builds:
+    needs: lint-and-validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: Build Next.js 15 App (Frontend)
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SIGNALING_URL: ws://localhost:5000
+          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: Validate Signaling Server Build
+        run: |
+          node --check src/signaling/server.js
