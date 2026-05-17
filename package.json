@@ -8,7 +8,7 @@
     "signaling": "node src/signaling/server.js",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src"
+    "lint": "next lint"
   },
   "dependencies": {
     "framer-motion": "^12.38.0",
