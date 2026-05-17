@@ -130,7 +130,7 @@ wss.on('connection', (ws, req) => {
         }
 
         case 'transfer-request': {
-          const { to, transferId, fileName, fileSize, fileType } = data;
+          const { to, transferId, fileName, fileSize, fileType, senderName, senderAvatar } = data;
           if (to && clients.has(to)) {
             const targetClient = clients.get(to);
             if (targetClient.ws.readyState === WebSocket.OPEN) {
@@ -141,7 +141,9 @@ wss.on('connection', (ws, req) => {
                   transferId,
                   fileName,
                   fileSize,
-                  fileType
+                  fileType,
+                  senderName,
+                  senderAvatar
                 }
               }));
             }

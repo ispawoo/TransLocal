@@ -12,7 +12,7 @@ class SignalingService {
   // Custom event listeners
   private signalListeners: Array<(from: string, signal: any) => void> = [];
   private chatListeners: Array<(from: string, text: string) => void> = [];
-  private transferRequestListeners: Array<(from: string, transferId: string, fileName: string, fileSize: number, fileType: string) => void> = [];
+  private transferRequestListeners: Array<(from: string, transferId: string, fileName: string, fileSize: number, fileType: string, senderName?: string, senderAvatar?: string) => void> = [];
   private transferResponseListeners: Array<(from: string, transferId: string, accepted: boolean) => void> = [];
   private transferCancelListeners: Array<(from: string, transferId: string) => void> = [];
 
@@ -77,7 +77,7 @@ class SignalingService {
               break;
             case 'transfer-request':
               this.transferRequestListeners.forEach(listener => 
-                listener(data.from, data.transferId, data.fileName, data.fileSize, data.fileType)
+                listener(data.from, data.transferId, data.fileName, data.fileSize, data.fileType, data.senderName, data.senderAvatar)
               );
               break;
             case 'transfer-response':
@@ -235,9 +235,18 @@ class SignalingService {
   }
 
   public sendTransferRequest(to: string, transferId: string, fileName: string, fileSize: number, fileType: string) {
+    const store = useAppStore.getState();
     this.send({
       type: 'transfer-request',
-      data: { to, transferId, fileName, fileSize, fileType }
+      data: { 
+        to, 
+        transferId, 
+        fileName, 
+        fileSize, 
+        fileType,
+        senderName: store.deviceName,
+        senderAvatar: store.deviceAvatar
+      }
     });
   }
 
@@ -279,7 +288,7 @@ class SignalingService {
   }
 
   public onTransferRequest(
-    callback: (from: string, transferId: string, fileName: string, fileSize: number, fileType: string) => void
+    callback: (from: string, transferId: string, fileName: string, fileSize: number, fileType: string, senderName?: string, senderAvatar?: string) => void
   ) {
     this.transferRequestListeners.push(callback);
     return () => {

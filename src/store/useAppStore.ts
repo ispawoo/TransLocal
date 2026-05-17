@@ -83,7 +83,7 @@ interface AppState {
   
   // Transfer actions
   startSendTransfer: (id: string, peerId: string, fileName: string, fileSize: number, fileType: string) => void;
-  startReceiveTransfer: (id: string, peerId: string, fileName: string, fileSize: number, fileType: string) => void;
+  startReceiveTransfer: (id: string, peerId: string, fileName: string, fileSize: number, fileType: string, senderName?: string, senderAvatar?: string) => void;
   updateTransferProgress: (id: string, progress: number, bytesTransferred: number, speed: number, eta: number) => void;
   updateTransferStatus: (id: string, status: Transfer['status'], error?: string) => void;
   setTransferPreview: (id: string, previewUrl: string) => void;
@@ -261,7 +261,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     };
   }),
 
-  startReceiveTransfer: (id, peerId, fileName, fileSize, fileType) => set((state) => {
+  startReceiveTransfer: (id, peerId, fileName, fileSize, fileType, senderName, senderAvatar) => set((state) => {
     const peer = state.peers[peerId];
     return {
       transfers: {
@@ -269,8 +269,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         [id]: {
           id,
           peerId,
-          peerName: peer?.name || 'Unknown',
-          peerAvatar: peer?.avatar || '❓',
+          peerName: senderName || peer?.name || 'Unknown',
+          peerAvatar: senderAvatar || peer?.avatar || '❓',
           fileName,
           fileSize,
           fileType,

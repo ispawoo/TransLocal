@@ -17,6 +17,7 @@ interface PeerConnectionState {
     fileSize: number;
     fileType: string;
   };
+  candidateQueue?: RTCIceCandidateInit[];
 }
 
 class WebRTCManager {
@@ -31,8 +32,8 @@ class WebRTCManager {
     
     // Subscribe to signaling events
     signalingService.onSignal((from, signal) => this.handleSignal(from, signal));
-    signalingService.onTransferRequest((from, transferId, name, size, type) => 
-      this.handleIncomingRequest(from, transferId, name, size, type)
+    signalingService.onTransferRequest((from, transferId, name, size, type, senderName, senderAvatar) => 
+      this.handleIncomingRequest(from, transferId, name, size, type, senderName, senderAvatar)
     );
     signalingService.onTransferResponse((from, transferId, accepted) => 
       this.handleTransferResponse(from, transferId, accepted)
@@ -102,8 +103,30 @@ class WebRTCManager {
           await pc.setLocalDescription(answer);
           signalingService.sendSignal(from, { sdp: pc.localDescription });
         }
+
+        // Process any queued ICE candidates now that remote description is set
+        if (state.candidateQueue && state.candidateQueue.length > 0) {
+          console.log(`[WebRTC] Processing ${state.candidateQueue.length} queued ICE candidates for peer ${from}`);
+          for (const cand of state.candidateQueue) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(cand));
+            } catch (e) {
+              console.error('[WebRTC] Error adding queued ICE candidate:', e);
+            }
+          }
+          state.candidateQueue = [];
+        }
       } else if (signal.candidate) {
-        await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+        if (pc.remoteDescription && pc.remoteDescription.type) {
+          await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+        } else {
+          // Buffer candidate until remote description is processed
+          if (!state.candidateQueue) {
+            state.candidateQueue = [];
+          }
+          state.candidateQueue.push(signal.candidate);
+          console.log(`[WebRTC] Buffered ICE candidate from ${from} (SDP not yet set)`);
+        }
       }
     } catch (err) {
       console.error('[WebRTC] Error handling signal:', err);
@@ -189,7 +212,9 @@ class WebRTCManager {
     transferId: string,
     fileName: string,
     fileSize: number,
-    fileType: string
+    fileType: string,
+    senderName?: string,
+    senderAvatar?: string
   ) {
     const store = useAppStore.getState();
     
@@ -200,7 +225,7 @@ class WebRTCManager {
       return;
     }
 
-    store.startReceiveTransfer(transferId, from, fileName, fileSize, fileType);
+    store.startReceiveTransfer(transferId, from, fileName, fileSize, fileType, senderName, senderAvatar);
   }
 
   // Accept incoming transfer
