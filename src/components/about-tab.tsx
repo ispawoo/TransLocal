@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Shield, Share2, WifiOff, HardDrive, Smartphone, Monitor, ChevronRight } from 'lucide-react';
+import { Shield, Share2, WifiOff, HardDrive, Smartphone, Monitor, ChevronRight, Linkedin, Github, Coffee } from 'lucide-react';
 
 export const AboutTab: React.FC = () => {
   return (
@@ -133,11 +133,63 @@ export const AboutTab: React.FC = () => {
             <p className="text-[10px] text-slate-500 mt-0.5">Assembled in browser RAM</p>
           </div>
         </div>
+      </div>
 
+      {/* Author Credits Card */}
+      <div className="glass-panel p-6 rounded-3xl border border-white/5 bg-gradient-to-br from-slate-950/60 to-slate-900/40 relative overflow-hidden mt-6 mb-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-[#10B981]/5 rounded-full blur-xl"></div>
+        
+        <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#4F8CFF] to-[#10B981] p-0.5 shadow-lg shadow-brand-accent/15 shrink-0 flex items-center justify-center">
+            <div className="w-full h-full rounded-full bg-[#0B0F19] flex items-center justify-center">
+              <span className="text-lg font-black text-white tracking-tighter">YI</span>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-base font-extrabold text-white tracking-tight">Created by Yasir Ispawoo</h4>
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-sm">
+              An open-source developer passionate about building high-performance, private, and offline-first peer-to-peer web applications.
+            </p>
+            {/* Social Links */}
+            <div className="flex justify-center sm:justify-start items-center gap-3 mt-3">
+              <a 
+                href="https://linkedin.com/in/ispawoo" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-[#4F8CFF] hover:bg-white/10 hover:border-[#4F8CFF]/30 transition-all duration-300"
+                title="Follow on LinkedIn"
+              >
+                <Linkedin className="w-4 h-4" />
+              </a>
+              <a 
+                href="https://github.com/ispawoo" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300"
+                title="Follow on GitHub"
+              >
+                <Github className="w-4 h-4" />
+              </a>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">@ispawoo</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Buy Me a Coffee Button */}
+        <a
+          href="https://buymeacoffee.com/ispawoo"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative group flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#FFDD00] via-[#F4B400] to-[#E9A000] text-slate-950 font-bold text-xs shadow-lg shadow-[#FFDD00]/10 hover:shadow-[#FFDD00]/25 hover:scale-105 active:scale-95 transition-all duration-300 shrink-0 select-none cursor-pointer"
+        >
+          <div className="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <Coffee className="w-4 h-4 text-slate-950 animate-bounce group-hover:scale-110 transition-transform duration-300" />
+          <span>Buy Me a Coffee</span>
+        </a>
       </div>
 
       {/* Brand copy block */}
-      <div className="text-center text-[10px] text-slate-600 py-4 font-semibold tracking-wider uppercase border-t border-white/5 mt-4">
+      <div className="text-center text-[10px] text-slate-600 py-4 font-semibold tracking-wider uppercase border-t border-white/5">
         TransLocal P2P Core v1.0.0 • open source
       </div>
 

@@ -119,9 +119,20 @@ export default function Home() {
       <footer className="w-full py-3.5 px-4 md:px-8 border-t border-white/5 bg-slate-950/20 z-10 flex items-center justify-between text-[10px] text-slate-500 font-bold select-none">
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-          <span>Security status: End-to-End Cryptography Ok</span>
+          <span>Security status: E2E Direct P2P Channel</span>
         </div>
-        <div className="hidden xs:block">
+        <div className="flex items-center gap-1">
+          <span>Created by</span>
+          <a 
+            href="https://github.com/ispawoo" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-brand-accent hover:text-emerald-400 transition-colors duration-300 font-extrabold cursor-pointer select-text"
+          >
+            Yasir Ispawoo
+          </a>
+        </div>
+        <div className="hidden sm:block">
           <span>TransLocal v1.0.0</span>
         </div>
       </footer>
