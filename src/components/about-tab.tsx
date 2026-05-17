@@ -14,8 +14,12 @@ export const AboutTab: React.FC = () => {
       <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/5 bg-gradient-to-tr from-brand-bg to-slate-900/60 relative overflow-hidden mb-6 flex flex-col sm:flex-row items-center gap-6">
         <div className="absolute -top-10 -right-10 w-28 h-28 bg-[#4F8CFF]/5 rounded-full blur-xl"></div>
         
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-[#4F8CFF] to-[#10B981] flex items-center justify-center shadow-xl shadow-brand-accent/20 shrink-0">
-          <span className="text-3.5xl font-extrabold text-white tracking-tighter">TL</span>
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl overflow-hidden shadow-xl shadow-brand-accent/20 shrink-0 select-none">
+          <img 
+            src="/logo.jpg" 
+            alt="TransLocal Logo" 
+            className="w-full h-full object-cover"
+          />
         </div>
 
         <div>

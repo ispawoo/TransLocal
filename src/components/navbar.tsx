@@ -37,8 +37,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
     <header className="w-full glass-panel border-x-0 border-t-0 sticky top-0 z-40 px-4 md:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
       {/* Brand logo */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#4F8CFF] to-[#10B981] flex items-center justify-center shadow-lg shadow-brand-accent/20">
-          <span className="text-xl font-bold text-white tracking-tight">TL</span>
+        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-brand-accent/20 select-none">
+          <img 
+            src="/logo.jpg" 
+            alt="TransLocal Logo" 
+            className="w-full h-full object-cover"
+          />
         </div>
         <div>
           <h1 className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
